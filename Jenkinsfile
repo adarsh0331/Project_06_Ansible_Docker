@@ -19,12 +19,8 @@ pipeline {
 		
         stage('DEPLOY WITH ANSIBLE') {
             steps {
-                echo 'In this stage, Ansible will deploy the WAR file to Tomcat'
                 sh '''
-                    #ARTIFACT=$(ls target/*.war | head -n 1)
-                    ARTIFACT=$WORKSPACE/target/mindcircuitbatch15d-3.2.0.war
-                    echo "Deploying artifact: $ARTIFACT"
-                    ansible-playbook ansible/playbook.yml --extra-vars "artifact=$ARTIFACT"
+                    ansible-playbook playbook.yml 
                 '''
             }
         }
