@@ -5,17 +5,17 @@
   become: yes # Run tasks with elevated privileges
 
   tasks:
-    - name: Install Docker
-      ansible.builtin.apt:
-        name: docker.io
-        state: present
-        update_cache: yes
+    # - name: Install Docker
+    #   ansible.builtin.apt:
+    #     name: docker.io
+    #     state: present
+    #     update_cache: yes
 
-    - name: Start Docker service
-      ansible.builtin.systemd:
-        name: docker
-        state: started
-        enabled: yes
+    # - name: Start Docker service
+    #   ansible.builtin.systemd:
+    #     name: docker
+    #     state: started
+    #     enabled: yes
 
     - name: Build Docker image
       community.docker.docker_image:
