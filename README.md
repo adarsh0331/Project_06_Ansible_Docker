@@ -19,29 +19,30 @@
 
 ### 1. **Update System**
 ```bash
-sudo apt update && sudo apt upgrade -y
+sudo yum update -y
 ```
 
 ### 2. **Install Docker**
 ```bash
-sudo apt install docker.io -y
+sudo yum install -y docker
+sudo systemctl start docker
 sudo systemctl enable docker
 sudo usermod -aG docker $USER
 ```
 
 ### 3. **Install Ansible**
 ```bash
-sudo apt install software-properties-common -y
-sudo add-apt-repository --yes --update ppa:ansible/ansible
-sudo apt install ansible -y
+sudo yum install ansible -y
 ```
 
 ### 4. **Install Jenkins**
 ```bash
-wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
-sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
-sudo apt update
-sudo apt install openjdk-11-jdk jenkins -y
+sudo yum update -y
+sudo wget -O /etc/yum.repos.d/jenkins.repo  https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum upgrade
+sudo yum install java-21-amazon-corretto -y
+sudo yum install jenkins -y
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
 ```
@@ -69,7 +70,7 @@ Ensure the EC2 security group allows:
 #### **Stage 2: Trigger Ansible Playbook**
 - **Build Step**: Execute shell
 ```bash
-ansible-playbook -i inventory deploy.yml
+ansible-playbook playbook.yml
 ```
 
 ---
@@ -77,27 +78,28 @@ ansible-playbook -i inventory deploy.yml
 ## 📜 Ansible Playbook: `deploy.yml`
 
 ```yaml
-- hosts: localhost
-  become: yes
+-# deploy_docker.yml
+---
+- name: Deploy Docker Container
+  hosts: localhost # Define your target hosts in your inventory
+  become: yes # Run tasks with elevated privileges
+
   tasks:
     - name: Build Docker image
-      docker_image:
-        name: myapp
+      community.docker.docker_image:
+        name: my_app_image
         build:
-          path: /home/ubuntu/app
+          path: . # Path to the directory containing your Dockerfile
+        state: present
+        source: build
 
     - name: Run Docker container
-      docker_container:
-        name: myapp_container
-        image: myapp
+      community.docker.docker_container:
+        name: my_app_container
+        image: my_app_image:latest
         state: started
         ports:
-          - "8080:80"
-```
-
-### Inventory File: `inventory`
-```
-localhost ansible_connection=local
+          - "80:80" # Map host port 80 to container port 80
 ```
 
 ---
@@ -105,11 +107,12 @@ localhost ansible_connection=local
 ## 🐳 Dockerfile Example
 
 ```Dockerfile
-FROM ubuntu:20.04
-RUN apt update && apt install nginx -y
-COPY . /var/www/html
-CMD ["nginx", "-g", "daemon off;"]
+# Example Dockerfile
+FROM ubuntu:latest
+RUN apt-get update && apt-get install -y nginx
+COPY index.html /var/www/html/
 EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 ```
 
 ---
@@ -120,9 +123,9 @@ EXPOSE 80
 2. **Verify Docker Container**:
    ```bash
    docker ps
-   curl http://localhost:8080
+   curl http://localhost:80
    ```
-3. **Access Web App** via EC2 public IP: `http://<your-ec2-ip>:8080`
+3. **Access Web App** via EC2 public IP: `http://<your-ec2-ip>:80`
 
 ---
 
@@ -136,5 +139,3 @@ EXPOSE 80
 - Monitor EC2 resource usage—`t3.micro` is suitable for testing, not production.
 
 ---
-
-Would you like me to generate a visual diagram of this pipeline or convert this into a Markdown README for GitHub?
